@@ -1,10 +1,12 @@
-from flask import Blueprint, request
+from flask import Blueprint, request, jsonify
 from models.user import User
 from extensions import db, jwt_blocklist
 from schemas.user_schema import UserSchema
 from utils.response_wrapper import success_response, error_response
-from flask_jwt_extended import create_access_token, jwt_required, get_jwt
+from flask_jwt_extended import create_access_token, jwt_required, get_jwt, create_refresh_token, get_jwt_identity, \
+    set_refresh_cookies, unset_jwt_cookies
 from marshmallow import ValidationError
+
 auth_bp = Blueprint("auth_bp", __name__)
 user_schema = UserSchema()
 
@@ -19,7 +21,6 @@ def register():
     try:
         data = user_schema.load(json_data)
     except ValidationError as e:
-        print(e)
         return error_response(str(e.messages), 400)
 
     if User.query.filter_by(email=data["email"]).first():
@@ -30,15 +31,16 @@ def register():
     db.session.add(user)
     db.session.commit()
 
-    # 🔐 Сразу создаём токен
-    token = create_access_token(identity=str(user.id))
+    access_token = create_access_token(identity=str(user.id))
+    refresh_token_value = create_refresh_token(identity=str(user.id))
 
-    return success_response({
+    response = success_response({
         "message": "User registered successfully",
-        "token": token
-    }, status=201)
+        "access_token": access_token
+    }, 201)
 
-    # return success_response("User registered successfully", status=201)
+    set_refresh_cookies(response, refresh_token_value)
+    return response
 
 
 @auth_bp.route("/login", methods=["POST"])
@@ -57,13 +59,38 @@ def login():
     if not user or not user.check_password(data["password"]):
         return error_response("Invalid email or password", 401)
 
-    token = create_access_token(identity=str(user.id))
-    return success_response({"token": token})
+    access_token = create_access_token(identity=str(user.id))
+    refresh_token_value = create_refresh_token(identity=str(user.id))
+
+    response = success_response({
+        "message": "User logged in successfully",
+        "access_token": access_token
+    }, 201)
+
+    set_refresh_cookies(response, refresh_token_value)
+    return response
 
 
 @auth_bp.route("/logout", methods=["POST"])
-@jwt_required()
+@jwt_required(verify_type=False)
 def logout():
-    jti = get_jwt()["jti"]  # JWT ID
+    jwt_data = get_jwt()
+    jti = jwt_data["jti"]
+    token_type = jwt_data["type"]
+
     jwt_blocklist.add(jti)
-    return success_response("Logged out successfully")
+
+    response = success_response(f"{token_type.capitalize()} token has been revoked.")
+    unset_jwt_cookies(response)
+    return response
+
+
+@auth_bp.route("/refresh", methods=["POST"])
+@jwt_required(refresh=True, locations=["cookies"])
+def refresh_token():
+    current_user_id = get_jwt_identity()
+    new_access_token = create_access_token(identity=current_user_id)
+
+    return success_response({
+        "access_token": new_access_token
+    })

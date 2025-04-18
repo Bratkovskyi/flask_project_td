@@ -9,10 +9,9 @@ def success_response(data=None, status=200):
     :param status: HTTP status code (default: 200)
     :return: Flask Response with JSON
     """
-    return jsonify({
-        "success": True,
-        "data": data
-    }), status
+    response = jsonify({"success": True, "data": data})
+    response.status_code = status
+    return response
 
 
 def error_response(message="Unknown error", status=400):
@@ -21,9 +20,11 @@ def error_response(message="Unknown error", status=400):
 
     :param message: String or dict with error details
     :param status: HTTP status code (default: 400)
-    :return: Flask Response with JSON
+    :return: Flask Response with status
     """
-    return jsonify({
+    response = jsonify({
         "success": False,
         "error": message
-    }), status
+    })
+    response.status_code = status
+    return response
