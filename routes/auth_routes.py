@@ -59,8 +59,8 @@ def login():
     if not user or not user.check_password(data["password"]):
         return error_response("Invalid email or password", 401)
 
-    access_token = create_access_token(identity=str(user.id))
-    refresh_token_value = create_refresh_token(identity=str(user.id))
+    access_token = create_access_token(identity=str(user.id), additional_claims={"role": user.role})
+    refresh_token_value = create_refresh_token(identity=str(user.id), additional_claims={"role": user.role})
 
     response = success_response({
         "message": "User logged in successfully",

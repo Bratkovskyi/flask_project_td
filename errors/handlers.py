@@ -12,6 +12,5 @@ def register_error_handlers(app):
         return error_response("Internal server error", 500)
 
     @app.errorhandler(Exception)
-    def unhandled_exception(e):
-        print(e)
+    def unhandled_exception(error):
         return error_response("Unexpected error", 500)

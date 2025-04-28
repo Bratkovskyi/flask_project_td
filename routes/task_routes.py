@@ -7,6 +7,7 @@ from schemas.task_schema import TaskSchema
 from utils.response_wrapper import error_response, success_response
 from flask_jwt_extended import jwt_required, get_jwt_identity
 
+from utils.role_required import role_required
 
 task_bp = Blueprint('task_bp', __name__)
 task_schema = TaskSchema()
@@ -99,3 +100,17 @@ def delete_task(task_id: int):
     db.session.delete(task)
     db.session.commit()
     return success_response("Task has been deleted", status=204)
+
+
+@task_bp.route("/admin/tasks", methods=["GET"])
+@jwt_required()
+@role_required("admin")
+def all_users_tasks():
+    tasks = Task.query.all()
+
+    if not tasks:
+        return error_response("No tasks found", 404)
+
+    tasks_list = [tasks.to_dict() for tasks in tasks]
+
+    return success_response(tasks_list)

@@ -1,6 +1,6 @@
 from flask import Flask
 from config import Config
-from extensions import db, jwt, bcrypt, jwt_blocklist
+from extensions import db, jwt, bcrypt, jwt_blocklist, migrate
 from routes.task_routes import task_bp
 from errors.handlers import register_error_handlers
 from routes.auth_routes import auth_bp
@@ -21,6 +21,7 @@ app.config.from_object(Config)
 db.init_app(app)
 jwt.init_app(app)
 bcrypt.init_app(app)
+migrate.init_app(app, db)
 
 app.register_blueprint(auth_bp)
 app.register_blueprint(task_bp)
