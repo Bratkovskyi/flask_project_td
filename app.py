@@ -5,6 +5,7 @@ from routes.task_routes import task_bp
 from errors.handlers import register_error_handlers
 from routes.auth_routes import auth_bp
 from extensions import limiter
+from flask_cors import CORS
 
 from models.user import User
 from models.task import Task
@@ -18,6 +19,8 @@ def check_if_token_revoked(jwt_header, jwt_payload):
 
 app = Flask(__name__)
 app.config.from_object(Config)
+
+CORS(app, resources={r"/api/*": {"origins": "http://localhost:3000"}}, supports_credentials=True)
 
 db.init_app(app)
 jwt.init_app(app)
