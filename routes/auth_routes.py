@@ -1,6 +1,6 @@
 from flask import Blueprint, request, jsonify
 from models.user import User
-from extensions import db, jwt_blocklist
+from extensions import db, jwt_blocklist, limiter
 from schemas.user_schema import UserSchema
 from utils.response_wrapper import success_response, error_response
 from flask_jwt_extended import create_access_token, jwt_required, get_jwt, create_refresh_token, get_jwt_identity, \
@@ -44,6 +44,7 @@ def register():
 
 
 @auth_bp.route("/login", methods=["POST"])
+@limiter.limit("5/minute")
 def login():
     json_data = request.get_json()
     if not json_data:

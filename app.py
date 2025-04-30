@@ -4,6 +4,7 @@ from extensions import db, jwt, bcrypt, jwt_blocklist, migrate
 from routes.task_routes import task_bp
 from errors.handlers import register_error_handlers
 from routes.auth_routes import auth_bp
+from extensions import limiter
 
 from models.user import User
 from models.task import Task
@@ -22,6 +23,7 @@ db.init_app(app)
 jwt.init_app(app)
 bcrypt.init_app(app)
 migrate.init_app(app, db)
+limiter.init_app(app)
 
 app.register_blueprint(auth_bp)
 app.register_blueprint(task_bp)
