@@ -44,7 +44,8 @@ def register():
 
 
 @auth_bp.route("/login", methods=["POST"])
-@limiter.limit("5/minute")
+@jwt_required()
+@limiter.limit("10/minute")
 def login():
     json_data = request.get_json()
     if not json_data:
