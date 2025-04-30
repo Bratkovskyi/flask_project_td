@@ -6,9 +6,21 @@ from utils.response_wrapper import success_response, error_response
 from flask_jwt_extended import create_access_token, jwt_required, get_jwt, create_refresh_token, get_jwt_identity, \
     set_refresh_cookies, unset_jwt_cookies
 from marshmallow import ValidationError
+from flask_limiter.util import get_remote_address
 
 auth_bp = Blueprint("auth_bp", __name__)
 user_schema = UserSchema()
+
+
+def login_rate_limit_key():
+    try:
+        data = request.get_json()
+        email = data.get("email", "").strip().lower()
+        if email:
+            return f"login:{email}"
+    except:
+        pass
+    return f"ip:{get_remote_address()}"
 
 
 @auth_bp.route("/register", methods=["POST"])
@@ -44,8 +56,7 @@ def register():
 
 
 @auth_bp.route("/login", methods=["POST"])
-@jwt_required()
-@limiter.limit("10/minute")
+@limiter.limit("10/minute", key_func=login_rate_limit_key)
 def login():
     json_data = request.get_json()
     if not json_data:
