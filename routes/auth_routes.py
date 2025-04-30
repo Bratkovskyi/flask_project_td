@@ -1,6 +1,7 @@
 from flask import Blueprint, request, jsonify
 from models.user import User
-from extensions import db, jwt_blocklist, limiter
+from extensions import db, limiter, add_token_to_blocklist
+from datetime import datetime, UTC
 from schemas.user_schema import UserSchema
 from utils.response_wrapper import success_response, error_response
 from flask_jwt_extended import create_access_token, jwt_required, get_jwt, create_refresh_token, get_jwt_identity, \
@@ -89,11 +90,15 @@ def login():
 def logout():
     jwt_data = get_jwt()
     jti = jwt_data["jti"]
-    token_type = jwt_data["type"]
+    exp_timestamp = jwt_data["exp"]
+    now_timestamp = int(datetime.now(UTC).timestamp())
 
-    jwt_blocklist.add(jti)
+    ttl = exp_timestamp - now_timestamp
 
-    response = success_response(f"{token_type.capitalize()} token has been revoked.")
+    if ttl > 0:
+        add_token_to_blocklist(jti, ttl)
+
+    response = success_response(f"{jwt_data['type'].capitalize()} token has been revoked.")
     unset_jwt_cookies(response)
     return response
 

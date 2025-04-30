@@ -1,6 +1,6 @@
 from flask import Flask
 from config import Config
-from extensions import db, jwt, bcrypt, jwt_blocklist, migrate
+from extensions import db, jwt, bcrypt, migrate, is_token_revoked
 from routes.task_routes import task_bp
 from errors.handlers import register_error_handlers
 from routes.auth_routes import auth_bp
@@ -35,6 +35,6 @@ def create_app(config_class=Config):
     @jwt.token_in_blocklist_loader
     def check_if_token_revoked(jwt_header, jwt_payload):
         jti = jwt_payload["jti"]
-        return jti in jwt_blocklist
+        return is_token_revoked(jti)
 
     return app
